@@ -91,7 +91,8 @@ jobs:
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
+        env:
+          DIST_PATH: ./jcef-build/packaging/build/distributions/${{env.ARCH_DIST}}.zip
         with:
-          name: env.ARCH_DIST
-          path: |
-            ./jcef-build/packaging/build/distributions/$ARCH_DIST.zip
+          name: ${{env.ARCH_DIST}}
+          path: $DIST_PATH
