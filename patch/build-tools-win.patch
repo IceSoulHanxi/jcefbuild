@@ -1,0 +1,13 @@
+diff --git a/tools/make_jar.bat b/tools/make_jar.bat
+index 4637441..b8b2864 100644
+--- a/tools/make_jar.bat
++++ b/tools/make_jar.bat
+@@ -12,7 +12,7 @@ set ERRORLEVEL=1
+ goto end
+ )
+ cd ..\out\%1
+-jar -cf jcef.jar org/cef/*.class org/cef/browser/*.class org/cef/callback/*.class org/cef/handler/*.class org/cef/misc/*.class  org/cef/network/*.class
++jar -cf jcef.jar module-info.class com/jetbrains/cef/*.class com/jetbrains/cef/version.info org/cef/*.class org/cef/browser/*.class org/cef/callback/*.class org/cef/handler/*.class org/cef/misc/*.class org/cef/network/*.class
+ jar -cf jcef-tests.jar tests/detailed/*.class tests/detailed/dialog/*.class tests/detailed/handler/* tests/detailed/ui/*.class
+ 
+ :end
