@@ -78,6 +78,7 @@ jobs:
           if not exist %OUT_PATH% mkdir %OUT_PATH%
           ant -v modular-sdk
           echo Start make_distrib.bat
+          replace /r %GITHUB_WORKSPACE%/jcef-build/tools/make_jar.bat %GITHUB_WORKSPACE%/src/tools
           cd %GITHUB_WORKSPACE%/src/tools
           ./make_distrib.bat %ARCH_DIST%
         shell: cmd
@@ -91,5 +92,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: win64
-          path: ./jcef-build/packaging/build/distributions/win64.zip
+          name: env.ARCH_DIST
+          path: |
+            ./jcef-build/packaging/build/distributions/$ARCH_DIST.zip
