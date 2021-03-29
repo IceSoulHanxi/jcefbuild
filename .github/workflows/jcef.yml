@@ -1,0 +1,95 @@
+name: Publish Latest Releases
+
+on:
+  push:
+    paths: ['.github/workflows/jcef.yml']
+    branches: master
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  ARCH_DIST: win64
+  BUILD_PLATFORM: x64
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout JCEF-BUILD
+        uses: actions/checkout@v2
+        with:
+          path: jcef-build
+
+      - name: Checkout JetBrains JCEF
+        uses: actions/checkout@v2
+        with:
+          repository: JetBrains/jcef
+          path: src
+
+      - uses: actions/cache@v1
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-chocolatey-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chocolatey-${{ matrix.os }}-
+            ${{ runner.os }}-chocolatey-
+
+      - name: Uninstall default JDK8
+        run: |
+          Get-CimInstance Win32_Product -filter "name like 'Java%'" | % { $_.Uninstall() }
+        shell: powershell
+
+      - name: Install OpenJ9
+        uses: AdoptOpenJDK/install-jdk@v1
+        with:
+          version: '11'
+          architecture: x64
+          impl: openj9
+
+      - name: Install Python3.7 with chocolatey
+        run: choco install --no-progress python3 --version=3.7.9
+        shell: cmd
+
+      - name: Add msbuild to PATH
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Ninja with chocolatey
+        run: choco install --no-progress ninja
+        shell: cmd
+
+      - name: Build JetBrains JCEF Native
+        run: |
+          cd %GITHUB_WORKSPACE%/src
+          mkdir jcef_build
+          cd jcef_build
+          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvars64.bat"
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ..
+          ninja
+        shell: cmd
+
+      - name: Build JetBrains JCEF
+        run: |
+          echo %JAVA_HOME%
+          echo Start compile
+          cd %GITHUB_WORKSPACE%/src
+          set OUT_PATH=out\%ARCH_DIST%
+          set OUT_NATIVE_PATH=jcef_build\native\%BUILD_TYPE%
+          set CLS_PATH=".\third_party\jogamp\jar\*;.\third_party\junit\*;.\java"
+          if not exist %OUT_PATH% mkdir %OUT_PATH%
+          ant -v modular-sdk
+          echo Start make_distrib.bat
+          cd %GITHUB_WORKSPACE%/src/tools
+          ./make_distrib.bat %ARCH_DIST%
+        shell: cmd
+
+      - name: Packaging
+        run: |
+          cd %GITHUB_WORKSPACE%/jcef-build/packaging
+          ./gradlew.bat -DBIN_ARTIFACT="%GITHUB_WORKSPACE%/src/binary_distrib" --info --no-daemon jcefPackage
+        shell: cmd
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: win64
+          path: ./jcef-build/packaging/build/distributions/win64.zip
